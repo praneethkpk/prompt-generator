@@ -1,20 +1,50 @@
 // src/services/llmService.js
 // ──────────────────────────────────────────────────────────────
-// DUAL-MODE LLM SERVICE (SERVER PROXY + CLIENT BYOK)
+// SECURE BYOK LLM SERVICE (CLIENT-SIDE DIRECT FETCH)
 // ──────────────────────────────────────────────────────────────
-// 1. If user enters an API key in UI Settings (stored in localStorage),
-//    requests are sent directly to the LLM provider API from the browser.
-// 2. Otherwise, requests are routed to the secure /api/* backend proxy.
+// Security Guarantees:
+// 1. API Keys are kept in React / In-Memory state ONLY.
+// 2. Secret keys are NEVER written to localStorage, cookies, or logs.
+// 3. Requests travel directly from the browser to the selected LLM endpoint.
 // ──────────────────────────────────────────────────────────────
 
-const API_BASE = "/api";
+import {
+  PROVIDER_PRESETS,
+  sendAdapterRequest,
+  testAdapterConnection,
+} from "./adapters";
+
+// In-memory key holder for current browser session
+let inMemoryApiKey = "";
 
 /**
- * Get user settings stored in localStorage (if any).
+ * Set active session API key (In-Memory ONLY)
+ */
+export function setSessionApiKey(key) {
+  inMemoryApiKey = typeof key === "string" ? key.trim() : "";
+}
+
+/**
+ * Get active session API key (In-Memory ONLY)
+ */
+export function getSessionApiKey() {
+  return inMemoryApiKey;
+}
+
+/**
+ * Clear in-memory API key
+ */
+export function clearSessionApiKey() {
+  inMemoryApiKey = "";
+}
+
+/**
+ * Get non-sensitive user settings stored in localStorage.
+ * Note: Never contains the raw API key.
  */
 export function getStoredSettings() {
   try {
-    const raw = localStorage.getItem("prompt_gen_settings");
+    const raw = localStorage.getItem("prompt_gen_settings_v2");
     if (!raw) return null;
     return JSON.parse(raw);
   } catch {
@@ -23,104 +53,85 @@ export function getStoredSettings() {
 }
 
 /**
- * Save user settings to localStorage.
+ * Save non-sensitive settings (provider, model, baseURL) to localStorage.
  */
 export function saveSettings(settings) {
-  if (!settings || !settings.apiKey?.trim()) {
-    localStorage.removeItem("prompt_gen_settings");
-  } else {
-    localStorage.setItem("prompt_gen_settings", JSON.stringify(settings));
+  if (!settings) {
+    localStorage.removeItem("prompt_gen_settings_v2");
+    return;
   }
+
+  // Explicitly strip apiKey from object before saving to localStorage
+  const safeSettings = {
+    provider: settings.provider || "gemini",
+    model: settings.model || "gemini-2.5-flash",
+    baseURL: settings.baseURL || "",
+    customEndpointsApproved: settings.customEndpointsApproved || [],
+  };
+
+  localStorage.setItem("prompt_gen_settings_v2", JSON.stringify(safeSettings));
 }
 
 /**
- * Call LLM directly from client if custom settings exist, otherwise call backend proxy.
+ * Call LLM using active session configuration.
  */
-async function sendLLMRequest(prompt, systemMessage = null) {
-  const custom = getStoredSettings();
+export async function sendLLMRequest(prompt, systemMessage = null, customConfig = null) {
+  const stored = getStoredSettings() || {};
+  const provider = customConfig?.provider || stored.provider || "gemini";
+  const model = customConfig?.model || stored.model || PROVIDER_PRESETS[provider]?.models[0] || "gemini-2.5-flash";
+  const baseURL = customConfig?.baseURL || stored.baseURL || PROVIDER_PRESETS[provider]?.baseURL || "";
+  const apiKey = customConfig?.apiKey ?? getSessionApiKey();
 
-  // ── Mode 1: Client BYOK (Bring Your Own Key) ──
-  if (custom && custom.apiKey?.trim()) {
-    const apiKey = custom.apiKey.trim();
-    let baseURL = custom.baseURL?.trim() || "https://api.openai.com/v1";
-    const model = custom.model?.trim() || "gpt-4o-mini";
-
-    // Standardize baseURL to end with /
-    if (!baseURL.endsWith("/")) baseURL += "/";
-    const endpoint = `${baseURL}chat/completions`;
-
-    const messages = [];
-    if (systemMessage) {
-      messages.push({ role: "system", content: systemMessage });
-    }
-    messages.push({ role: "user", content: prompt });
-
-    let res;
-    try {
-      res = await fetch(endpoint, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model,
-          messages,
-          temperature: 0.7,
-          max_tokens: 2048,
-        }),
-      });
-    } catch (err) {
-      throw new Error(
-        `Network error calling ${baseURL} — check your internet connection or URL.`
-      );
-    }
-
-    const data = await res.json();
-    if (!res.ok) {
-      const msg = data.error?.message || data.error || `HTTP Error ${res.status}`;
-      throw new Error(`LLM Error: ${msg}`);
-    }
-
-    const resultText = data.choices?.[0]?.message?.content;
-    if (!resultText) throw new Error("LLM returned an empty response.");
-    return resultText;
-  }
-
-  // ── Mode 2: Server Proxy ──
-  let res;
-  try {
-    res = await fetch(`${API_BASE}${systemMessage ? "/generate" : "/test"}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt, systemMessage }),
-    });
-  } catch (err) {
+  if (!apiKey && provider !== "ollama") {
     throw new Error(
-      "Cannot reach the server proxy. Please enter an API key in ⚙️ Settings or make sure the server is running."
+      "No API key provided. Please enter your API key in ⚙️ Settings."
     );
   }
 
-  const data = await res.json();
-  if (!res.ok) {
-    throw new Error(data.error || `Server error (${res.status})`);
+  const messages = [];
+  if (systemMessage) {
+    messages.push({ role: "system", content: systemMessage });
   }
+  messages.push({ role: "user", content: prompt });
 
-  return data.result;
+  const response = await sendAdapterRequest({
+    providerKey: provider,
+    apiKey,
+    baseURL,
+    model,
+    messages,
+    temperature: 0.7,
+    maxTokens: 2048,
+  });
+
+  return response.content;
 }
 
 /**
- * Generate an engineered prompt from the given meta-prompt string.
+ * Generate an engineered prompt from the meta-prompt input.
  */
-export async function generatePrompt(metaPrompt) {
+export async function generatePrompt(metaPrompt, customConfig = null) {
   const defaultSystemMsg =
-    "You are a world-class prompt engineer. Follow the user's meta-prompt instructions precisely.";
-  return sendLLMRequest(metaPrompt, defaultSystemMsg);
+    "You are a world-class prompt engineer. Follow the user's meta-prompt instructions precisely to generate a production-ready prompt.";
+  return sendLLMRequest(metaPrompt, defaultSystemMsg, customConfig);
 }
 
 /**
- * "Test" a generated prompt by sending it to the LLM and returning a sample response.
+ * Test a generated prompt against the active LLM.
  */
-export async function testPrompt(prompt) {
-  return sendLLMRequest(prompt);
+export async function testPrompt(prompt, customConfig = null) {
+  return sendLLMRequest(prompt, null, customConfig);
+}
+
+/**
+ * Test connection to configured provider
+ */
+export async function testConnection({ provider, apiKey, baseURL, model }) {
+  const keyToUse = apiKey !== undefined ? apiKey : getSessionApiKey();
+  return testAdapterConnection({
+    providerKey: provider,
+    apiKey: keyToUse,
+    baseURL,
+    model,
+  });
 }
