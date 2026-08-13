@@ -64,7 +64,7 @@ export function saveSettings(settings) {
   // Explicitly strip apiKey from object before saving to localStorage
   const safeSettings = {
     provider: settings.provider || "gemini",
-    model: settings.model || "gemini-2.5-flash",
+    model: settings.model || "gemini-3.6-flash",
     baseURL: settings.baseURL || "",
     customEndpointsApproved: settings.customEndpointsApproved || [],
   };
@@ -78,7 +78,7 @@ export function saveSettings(settings) {
 export async function sendLLMRequest(prompt, systemMessage = null, customConfig = null) {
   const stored = getStoredSettings() || {};
   const provider = customConfig?.provider || stored.provider || "gemini";
-  const model = customConfig?.model || stored.model || PROVIDER_PRESETS[provider]?.models[0] || "gemini-2.5-flash";
+  const model = customConfig?.model || stored.model || PROVIDER_PRESETS[provider]?.models[0] || "gemini-3.6-flash";
   const baseURL = customConfig?.baseURL || stored.baseURL || PROVIDER_PRESETS[provider]?.baseURL || "";
   const apiKey = customConfig?.apiKey ?? getSessionApiKey();
 

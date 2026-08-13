@@ -51,7 +51,7 @@ export default function App() {
       savePromptToHistory({
         inputs,
         generatedPrompt: result,
-        model: activeSettings?.model || "gemini-2.5-flash",
+        model: activeSettings?.model || "gemini-3.6-flash",
         provider: activeSettings?.provider || "gemini",
       });
 
