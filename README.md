@@ -1,17 +1,41 @@
-# ⚡ AI Prompt Generator — Provider-Agnostic Meta-Prompting Web App
+# ⚡ AI Prompt Generator — Client-Side BYOK Prompt Engineering Workspace
 
-A lightweight, production-ready Prompt Generator application built with **React**, **Tailwind CSS**, **shadcn UI**, and a secure **Node.js Express Proxy**.
+A privacy-first, **Bring Your Own Key (BYOK)** prompt engineering workspace built with **React**, **Vite**, **Tailwind CSS**, and a **Multi-Provider Adapter Engine**.
 
-The application converts structured user inputs (*Role*, *Context*, *Task*, *Desired Output Format*) into engineered, production-grade prompts using XML-tag meta-prompting and Chain-of-Thought (CoT) directives.
+The application enables users to create, evaluate, benchmark, and manage engineered prompts across multiple LLM providers (Google Gemini, OpenAI, Groq, OpenRouter, DeepSeek, Mistral, and local Ollama) directly from the browser.
 
 ---
 
-## 🔒 Security Architecture (Zero Client Secrets)
+## 🔒 Security & Privacy Architecture
 
-This app implements a **Zero-Client-Key Proxy Pattern**:
-- **No API Keys in Client Bundles**: API keys are stored in server-only environment variables (`LLM_API_KEY`) without the `VITE_` prefix.
-- **Backend Proxy (`server/index.js`)**: Handles authentication, prompt-length validation (max 10,000 chars), rate-limiting (15 req/min per IP), and error sanitisation.
-- **Vite Proxy (`vite.config.js`)**: Routes frontend requests (`/api/*`) seamlessly to the backend server (`http://localhost:3001`).
+This application operates as a **Pure Client-Side BYOK Static Application** with **Zero Server Persistence**:
+
+- **In-Memory Key Handling:** API keys live exclusively in temporary React session state (`apiKey`). Keys are **never written to `localStorage`**, cookies, or disk, and vanish when the browser tab closes.
+- **Direct Provider Fetch:** Outbound API requests travel directly from the client browser to your selected AI provider. No intermediate backend proxy or logging server is involved.
+- **Non-Sensitive Preference Persistence:** Only non-sensitive configurations (`provider`, `model`, `baseURL`) persist in `localStorage`.
+- **Custom Base URL Protocol Guard:** Custom endpoints are validated for protocol safety (`https://` required for remote hosts; `http://` permitted for local Ollama/localhost). Custom URLs require explicit user confirmation.
+- **Static Content Security Policy (CSP):** Netlify deployment headers enforce CSP restrictions, scoping `connect-src` rules to verified provider API domains.
+
+---
+
+## ✨ Features
+
+- 🎯 **Meta-Prompt Engineering Engine:** Transforms structured inputs (*Role*, *Context*, *Task*, *Desired Output Format*) into production-grade prompts using XML tags and Chain-of-Thought (CoT) directives.
+- 🔌 **Multi-Provider Adapter Engine:** Pre-configured adapters for:
+  - **Google Gemini** (`gemini-3.6-flash`, `gemini-3.5-flash-lite`, `gemini-3.1-pro`, `gemini-2.5-flash`)
+  - **OpenAI** (`gpt-4o-mini`, `gpt-4o`, `gpt-4-turbo`, `o3-mini`)
+  - **Groq Ultra-Fast** (`llama-3.3-70b-versatile`, `llama-3.1-8b-instant`)
+  - **OpenRouter** (`anthropic/claude-3.5-sonnet`, `google/gemini-2.5-flash`, etc.)
+  - **DeepSeek AI** (`deepseek-chat`, `deepseek-reasoner`)
+  - **Mistral AI** (`mistral-small-latest`, `mistral-large-latest`)
+  - **Local Ollama** (`llama3.2`, `qwen2.5-coder`)
+  - **Custom OpenAI-Compatible Providers**
+- 🧪 **Connection Verification:** Test endpoint status and latency (`✓ Connection Successful (350ms)`) directly in Settings.
+- 📊 **5-Metric Prompt Quality Evaluator:** Scores engineered prompts on *Clarity*, *Specificity*, *Context & Persona*, *Constraints*, and *Output Format* (0–10) with actionable optimization recommendations.
+- ⚖️ **Multi-Model Comparison Engine:** Benchmark prompt execution side-by-side across up to 3 selected models simultaneously.
+- 📚 **Prompt Templates Library:** Pre-engineered templates across 8 categories (Software Engineering, System Design, Coding, Debugging, Testing, Business, Research, Resume).
+- 📜 **Local Prompt History & Exports:** History manager with search, favorites, JSON backup/import, and Markdown/TXT exports.
+- ⌨️ **Keyboard Shortcuts:** `Ctrl+Enter` to generate, `Ctrl+Shift+T` for templates, `Ctrl+Shift+H` for history, `Ctrl+Shift+S` for settings.
 
 ---
 
@@ -20,207 +44,84 @@ This app implements a **Zero-Client-Key Proxy Pattern**:
 ### 1. Clone & Install Dependencies
 
 ```bash
-cd prompt-generator-app
+git clone https://github.com/praneethkpk/prompt-generator.git
+cd prompt-generator
 npm install
 ```
 
-### 2. Configure Environment Variables
-
-Copy `.env.example` to `.env`:
+### 2. Start Development Server
 
 ```bash
-cp .env.example .env
-```
-
-Edit `.env` to add your provider credentials (see configurations below).
-
-### 3. Start Application
-
-Run both backend proxy and frontend concurrently:
-
-```bash
-npm run dev:all
-```
-
-Or run separately in two terminals:
-
-```bash
-# Terminal 1 (Backend Proxy)
-npm run server
-
-# Terminal 2 (Vite Frontend)
 npm run dev
 ```
 
 Open **http://localhost:5173** in your browser.
 
----
+### 3. Enter API Key in Settings
 
-## 🔌 Provider Configuration Guide
-
-Because the backend proxy uses the standard **OpenAI-Compatible Chat Completions API format**, you can switch between any cloud or local LLM provider simply by setting `LLM_BASE_URL`, `LLM_API_KEY`, and `LLM_MODEL` in your `.env` file.
-
-### 1. OpenAI
-
-- **Get API Key**: [https://platform.openai.com/api-keys](https://platform.openai.com/api-keys)
-
-```env
-LLM_API_KEY=sk-proj-your-openai-key-here
-LLM_BASE_URL=https://api.openai.com/v1
-LLM_MODEL=gpt-4o-mini
-PORT=3001
-```
-
-*Popular OpenAI Models:* `gpt-4o-mini`, `gpt-4o`, `gpt-4-turbo`
+Click **⚙️ Settings** in the top navigation bar, select your provider (e.g. Google Gemini, OpenAI, or Groq), enter your API key, and click **💾 Activate Settings**.
 
 ---
 
-### 2. Google Gemini (OpenAI-Compatible Endpoint)
+## 🛠️ Provider Endpoint Reference
 
-- **Get API Key**: [https://aistudio.google.com/](https://aistudio.google.com/)
-
-```env
-LLM_API_KEY=your-gemini-api-key-here
-LLM_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai/
-LLM_MODEL=gemini-3.5-flash
-PORT=3001
-```
-
-*Popular Gemini Models:* `gemini-3.5-flash`, `gemini-3.6-flash`, `gemini-1.5-pro`
-
----
-
-### 3. Groq (Ultra-Fast Inference)
-
-- **Get API Key**: [https://console.groq.com/keys](https://console.groq.com/keys)
-
-```env
-LLM_API_KEY=gsk_your_groq_api_key_here
-LLM_BASE_URL=https://api.groq.com/openai/v1
-LLM_MODEL=llama-3.3-70b-versatile
-PORT=3001
-```
-
-*Popular Groq Models:* `llama-3.3-70b-versatile`, `llama-3.1-8b-instant`, `mixtral-8x7b-32768`
-
----
-
-### 4. DeepSeek AI
-
-- **Get API Key**: [https://platform.deepseek.com/api_keys](https://platform.deepseek.com/api_keys)
-
-```env
-LLM_API_KEY=sk-your-deepseek-key-here
-LLM_BASE_URL=https://api.deepseek.com/v1
-LLM_MODEL=deepseek-chat
-PORT=3001
-```
-
-*Popular DeepSeek Models:* `deepseek-chat` (DeepSeek-V3), `deepseek-reasoner` (DeepSeek-R1)
-
----
-
-### 5. Local Ollama (Zero Cost & Offline)
-
-- **Download Ollama**: [https://ollama.com/](https://ollama.com/)
-- **Pull Model**: Run `ollama pull llama3` or `ollama pull qwen2.5-coder`
-
-```env
-LLM_API_KEY=ollama
-LLM_BASE_URL=http://localhost:11434/v1
-LLM_MODEL=llama3
-PORT=3001
-```
-
-*Popular Ollama Models:* `llama3`, `qwen2.5-coder`, `mistral`, `gemma2`
-
----
-
-### 6. OpenRouter (Access 100+ Models)
-
-- **Get API Key**: [https://openrouter.ai/keys](https://openrouter.ai/keys)
-
-```env
-LLM_API_KEY=sk-or-v1-your-openrouter-key-here
-LLM_BASE_URL=https://openrouter.ai/api/v1
-LLM_MODEL=anthropic/claude-3.5-sonnet
-PORT=3001
-```
-
-*Popular OpenRouter Models:* `anthropic/claude-3.5-sonnet`, `meta-llama/llama-3.3-70b-instruct`, `mistralai/mistral-large`
-
----
-
-### 7. Together AI
-
-- **Get API Key**: [https://api.together.ai/settings/api-keys](https://api.together.ai/settings/api-keys)
-
-```env
-LLM_API_KEY=your-together-api-key-here
-LLM_BASE_URL=https://api.together.xyz/v1
-LLM_MODEL=meta-llama/Llama-3.3-70B-Instruct-Turbo
-PORT=3001
-```
-
----
-
-### 8. Mistral AI
-
-- **Get API Key**: [https://console.mistral.ai/api-keys/](https://console.mistral.ai/api-keys/)
-
-```env
-LLM_API_KEY=your-mistral-api-key-here
-LLM_BASE_URL=https://api.mistral.ai/v1
-LLM_MODEL=mistral-small-latest
-PORT=3001
-```
-
----
-
-## 🛠️ Summary Matrix
-
-| Provider | Base URL (`LLM_BASE_URL`) | Recommended Model (`LLM_MODEL`) | Requires Credit Card? |
+| Provider | Base URL | Default Model | Key Requirement |
 | :--- | :--- | :--- | :--- |
+| **Google Gemini** | `https://generativelanguage.googleapis.com/v1beta/openai` | `gemini-3.6-flash` | Free Tier Available |
 | **OpenAI** | `https://api.openai.com/v1` | `gpt-4o-mini` | Pay-as-you-go |
-| **Google Gemini** | `https://generativelanguage.googleapis.com/v1beta/openai/` | `gemini-3.5-flash` | Free tier available |
-| **Groq** | `https://api.groq.com/openai/v1` | `llama-3.3-70b-versatile` | Free tier available |
-| **DeepSeek** | `https://api.deepseek.com/v1` | `deepseek-chat` | Pay-as-you-go |
-| **Ollama** | `http://localhost:11434/v1` | `llama3` | Completely Free (Local) |
-| **OpenRouter** | `https://openrouter.ai/api/v1` | `anthropic/claude-3.5-sonnet` | Pay-as-you-go |
-| **Together AI** | `https://api.together.xyz/v1` | `meta-llama/Llama-3.3-70B-Instruct-Turbo` | Free trial available |
+| **Groq** | `https://api.groq.com/openai/v1` | `llama-3.3-70b-versatile` | Free Tier Available |
+| **OpenRouter** | `https://openrouter.ai/api/v1` | `google/gemini-2.5-flash` | Pay-as-you-go |
+| **DeepSeek AI** | `https://api.deepseek.com/v1` | `deepseek-chat` | Pay-as-you-go |
 | **Mistral AI** | `https://api.mistral.ai/v1` | `mistral-small-latest` | Pay-as-you-go |
+| **Local Ollama** | `http://localhost:11434/v1` | `llama3.2` | Free (Local) |
+
+---
+
+## 🌐 Netlify Production Deployment
+
+Because this project is a static React application, deploying to Netlify takes less than a minute:
+
+1. Push your repository to GitHub.
+2. Connect your repository in [Netlify Console](https://app.netlify.com).
+3. Build Settings:
+   - **Build Command:** `npm run build`
+   - **Publish Directory:** `dist`
+4. Netlify will automatically detect `netlify.toml` and apply security headers (`_headers`).
 
 ---
 
 ## 📁 Project Structure
 
 ```
-prompt-generator-app/
-├── .env                              # Active environment file (git-ignored)
-├── .env.example                      # Template with provider examples
-├── README.md                         # Documentation
-├── package.json                      # Project dependencies & scripts
-├── vite.config.js                    # Vite setup with @ path alias & API proxy
-├── server/
-│   └── index.js                      # Express proxy server (secures API key)
-└── src/
-    ├── main.jsx                      # React entry point
-    ├── App.jsx                       # Root UI layout
-    ├── index.css                     # Tailwind & shadcn CSS variables
-    ├── components/
-    │   ├── PromptForm.jsx            # Form input & validation
-    │   ├── PromptOutput.jsx          # Markdown output, Copy & Test Prompt
-    │   └── ui/                       # shadcn UI components (button, card, input, textarea)
-    ├── prompts/
-    │   └── metaPromptTemplate.js     # Structural XML & CoT prompt builder
-    └── services/
-        └── llmService.js             # Client service calling /api endpoints
+prompt-generator/
+├── public/
+│   └── _headers                      # Netlify CSP & security response headers
+├── src/
+│   ├── main.jsx                      # React entry point
+│   ├── App.jsx                       # Main application shell & state
+│   ├── index.css                     # Tailwind CSS & theme variables
+│   ├── components/
+│   │   ├── PromptForm.jsx            # Inputs with live character counters
+│   │   ├── PromptOutput.jsx          # Markdown renderer & export triggers
+│   │   ├── PromptEvaluator.jsx       # 5-Metric quality scorecard
+│   │   ├── ModelComparisonModal.jsx  # Side-by-side benchmark runner
+│   │   ├── SettingsModal.jsx         # Provider config & Test Connection
+│   │   ├── SecurityPrivacyModal.jsx  # Architecture & privacy guarantees
+│   │   ├── PromptTemplatesModal.jsx  # Template gallery loader
+│   │   └── PromptHistoryModal.jsx    # History manager & JSON/MD exporter
+│   ├── data/
+│   │   └── promptTemplates.js        # Curated template dataset
+│   ├── hooks/
+│   │   └── useKeyboardShortcuts.js   # Global hotkey listener
+│   ├── prompts/
+│   │   └── metaPromptTemplate.js     # Structural meta-prompt builder
+│   └── services/
+│       ├── llmService.js             # Session key & LLM orchestration
+│       ├── evaluatorService.js       # Metric scoring engine
+│       ├── historyService.js         # LocalStorage history & export utils
+│       └── adapters/
+│         └── index.js                # Provider adapters with timeouts
+├── netlify.toml                      # Netlify deployment configuration
+├── package.json                      # Dependencies & build scripts
+└── vite.config.js                    # Vite bundler configuration
 ```
-
----
-
-## 🛡️ Production Deployment Checklist
-
-1. **Deploy Proxy Backend**: Deploy `server/index.js` to a serverless platform (Vercel Functions, Cloudflare Workers, Render, or Railway).
-2. **Environment Variables**: Add `LLM_API_KEY`, `LLM_BASE_URL`, and `LLM_MODEL` in your deployment platform's secret manager.
-3. **CORS**: Update `origin` in `server/index.js` to match your production domain.

@@ -63,21 +63,27 @@ export default function SecurityPrivacyModal({ isOpen, onClose }) {
                 </div>
               </div>
               <div className="p-3 rounded-md bg-zinc-900 border border-zinc-800 space-y-1">
-                <div className="font-medium text-emerald-400">🚫 Zero Telemetry or Logging</div>
+                <div className="font-medium text-emerald-400">🚫 No App Telemetry</div>
                 <div className="text-zinc-400 text-xs">
-                  Your prompts, system messages, and LLM responses are processed locally in your browser session.
+                  This application does not implement its own prompt telemetry, tracking scripts, or backend logging server.
                 </div>
               </div>
               <div className="p-3 rounded-md bg-zinc-900 border border-zinc-800 space-y-1">
-                <div className="font-medium text-emerald-400">🌐 Strict Content Security Policy</div>
+                <div className="font-medium text-emerald-400">🌐 Static Content Security Policy</div>
                 <div className="text-zinc-400 text-xs">
-                  Netlify HTTP headers enforce CSP restrictions, preventing unauthorized outbound connections.
+                  Netlify HTTP headers enforce CSP restrictions, scoping `connect-src` fetch rules to verified AI provider domains.
+                </div>
+              </div>
+              <div className="p-3 rounded-md bg-zinc-900 border border-zinc-800 space-y-1">
+                <div className="font-medium text-emerald-400">📜 Local History Storage</div>
+                <div className="text-zinc-400 text-xs">
+                  Prompt history is stored strictly in your browser's local storage (`localStorage`) for quick access until manually cleared.
                 </div>
               </div>
               <div className="p-3 rounded-md bg-zinc-900 border border-zinc-800 space-y-1">
                 <div className="font-medium text-emerald-400">⚠️ Custom Endpoint Warnings</div>
                 <div className="text-zinc-400 text-xs">
-                  Using a custom base URL requires explicit confirmation before sending authorization headers to unverified hosts.
+                  Custom Base URLs undergo protocol validation (`https://` required for remote hosts) and explicit user approval.
                 </div>
               </div>
             </div>

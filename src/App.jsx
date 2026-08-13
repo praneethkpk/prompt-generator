@@ -136,7 +136,7 @@ export default function App() {
               </span>
             </h1>
             <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-mono hidden md:inline-block">
-              v2.0 BYOK Security Certified
+              v2.0 Client-Side BYOK
             </span>
           </div>
 

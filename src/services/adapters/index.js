@@ -9,7 +9,7 @@
  * - DeepSeek AI (DeepSeek v1 API)
  * - Mistral AI (Mistral completions)
  * - Ollama (Local desktop/server endpoint)
- * - Custom (User-defined OpenAI-compatible API)
+ * - Custom (User-defined OpenAI-compatible API with protocol validation)
  */
 
 export const PROVIDER_PRESETS = {
@@ -85,6 +85,38 @@ export const PROVIDER_PRESETS = {
 };
 
 /**
+ * Custom URL protocol validator
+ * Rejects dangerous URI schemes (javascript:, data:, file:, ftp:)
+ * Enforces HTTPS for remote hosts (allows http for localhost / 127.0.0.1)
+ */
+export function validateCustomBaseURL(urlStr) {
+  if (!urlStr || !urlStr.trim()) return { valid: false, reason: "Base URL cannot be empty." };
+  const trimmed = urlStr.trim();
+
+  let parsed;
+  try {
+    parsed = new URL(trimmed);
+  } catch {
+    return { valid: false, reason: "Invalid URL syntax. Please include protocol (e.g. https://)." };
+  }
+
+  const allowedProtocols = ["https:", "http:"];
+  if (!allowedProtocols.includes(parsed.protocol)) {
+    return { valid: false, reason: `Protocol '${parsed.protocol}' is not allowed.` };
+  }
+
+  // If HTTP, allow only local development endpoints
+  if (parsed.protocol === "http:") {
+    const hostname = parsed.hostname.toLowerCase();
+    if (hostname !== "localhost" && hostname !== "127.0.0.1" && hostname !== "0.0.0.0") {
+      return { valid: false, reason: "Insecure HTTP allowed only for localhost endpoints. Remote endpoints must use HTTPS." };
+    }
+  }
+
+  return { valid: true, sanitizedURL: trimmed };
+}
+
+/**
  * Standardized endpoint resolution
  */
 function buildEndpoint(baseURL) {
@@ -117,14 +149,28 @@ function buildHeaders(providerKey, apiKey) {
 }
 
 /**
- * Send request via Provider Adapter
+ * Send request via Provider Adapter with 30s AbortController timeout & error sanitization
  */
-export async function sendAdapterRequest({ providerKey, apiKey, baseURL, model, messages, temperature = 0.7, maxTokens = 2048 }) {
+export async function sendAdapterRequest({
+  providerKey,
+  apiKey,
+  baseURL,
+  model,
+  messages,
+  temperature = 0.7,
+  maxTokens = 2048,
+}) {
   const preset = PROVIDER_PRESETS[providerKey] || PROVIDER_PRESETS.custom;
   const effectiveBaseURL = baseURL?.trim() || preset.baseURL;
 
   if (!effectiveBaseURL) {
     throw new Error("Base URL is missing. Please configure Base URL in Settings.");
+  }
+
+  // Validate custom URL protocol safety
+  const urlValidation = validateCustomBaseURL(effectiveBaseURL);
+  if (!urlValidation.valid) {
+    throw new Error(`Invalid Base URL: ${urlValidation.reason}`);
   }
 
   const endpoint = buildEndpoint(effectiveBaseURL);
@@ -138,26 +184,39 @@ export async function sendAdapterRequest({ providerKey, apiKey, baseURL, model, 
   };
 
   const startTime = performance.now();
-  let res;
 
+  // 30-Second AbortController Timeout Guard
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+  let res;
   try {
     res = await fetch(endpoint, {
       method: "POST",
       headers,
       body: JSON.stringify(payload),
+      signal: controller.signal,
     });
   } catch (err) {
+    if (err.name === "AbortError") {
+      throw new Error("Request timed out after 30 seconds. Provider endpoint did not respond.");
+    }
     throw new Error(
-      `Network error connecting to ${effectiveBaseURL}. Please check your connection or CORS settings.`
+      `Network error connecting to ${effectiveBaseURL}. Check internet connection or CORS/CSP settings.`
     );
+  } finally {
+    clearTimeout(timeoutId);
   }
 
   const latencyMs = Math.round(performance.now() - startTime);
   const data = await res.json().catch(() => null);
 
   if (!res.ok) {
-    const errorMsg = data?.error?.message || data?.error || data?.message || `HTTP ${res.status}`;
-    throw new Error(`Provider Error (${res.status}): ${errorMsg}`);
+    let rawError = data?.error?.message || data?.error || data?.message || `HTTP ${res.status}`;
+    if (typeof rawError !== "string") rawError = JSON.stringify(rawError);
+    // Cap error message length at 500 characters
+    const sanitizedError = rawError.length > 500 ? `${rawError.slice(0, 500)}...` : rawError;
+    throw new Error(`Provider Error (${res.status}): ${sanitizedError}`);
   }
 
   const resultText = data?.choices?.[0]?.message?.content;
@@ -177,7 +236,7 @@ export async function sendAdapterRequest({ providerKey, apiKey, baseURL, model, 
  */
 export async function testAdapterConnection({ providerKey, apiKey, baseURL, model }) {
   const preset = PROVIDER_PRESETS[providerKey] || PROVIDER_PRESETS.custom;
-  const effectiveModel = model || preset.models[0] || "gpt-4o-mini";
+  const effectiveModel = model || preset.models[0] || "gemini-3.6-flash";
 
   const testMessages = [
     { role: "user", content: "Reply with the single word 'OK' if you receive this test." }
@@ -195,6 +254,7 @@ export async function testAdapterConnection({ providerKey, apiKey, baseURL, mode
 
     return {
       success: true,
+      providerName: preset.name || providerKey,
       latencyMs: result.latencyMs,
       model: effectiveModel,
       message: `Connection successful (${result.latencyMs}ms)`,

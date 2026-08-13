@@ -356,21 +356,29 @@ export default function SettingsModal({ isOpen, onClose, apiKey, setApiKey }) {
 
               {testStatus && (
                 <div
-                  className={`text-xs p-2 rounded border font-mono ${
+                  className={`text-xs p-3 rounded-md border font-mono space-y-1.5 ${
                     testStatus.success
                       ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300"
                       : "bg-red-500/10 border-red-500/30 text-red-300"
                   }`}
                 >
                   {testStatus.success ? (
-                    <div className="flex items-center justify-between">
-                      <span>✓ {testStatus.message}</span>
-                      <span className="text-[10px] bg-emerald-500/20 px-1.5 py-0.5 rounded">
-                        {testStatus.model}
-                      </span>
+                    <div className="space-y-1 text-[11px]">
+                      <div className="flex items-center justify-between font-bold text-emerald-400">
+                        <span>✓ Connection Successful</span>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300">
+                          Auth: Verified
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-1 text-[10px] text-zinc-300 pt-1 border-t border-emerald-500/20">
+                        <div>Provider: <span className="text-emerald-400">{testStatus.providerName || PROVIDER_PRESETS[provider]?.name}</span></div>
+                        <div>Model: <span className="text-emerald-400">{testStatus.model}</span></div>
+                        <div>Latency: <span className="text-emerald-400">{testStatus.latencyMs} ms</span></div>
+                        <div>Status: <span className="text-emerald-400">Active</span></div>
+                      </div>
                     </div>
                   ) : (
-                    <div>⚠️ {testStatus.error}</div>
+                    <div>⚠️ Connection Failed: {testStatus.error}</div>
                   )}
                 </div>
               )}
