@@ -3,7 +3,7 @@
 // SECURE BYOK LLM SERVICE (CLIENT-SIDE DIRECT FETCH)
 // ──────────────────────────────────────────────────────────────
 // Security Guarantees:
-// 1. API Keys are kept in React / In-Memory state ONLY.
+// 1. API Keys are kept in In-Memory Application State ONLY.
 // 2. Secret keys are NEVER written to localStorage, cookies, or logs.
 // 3. Requests travel directly from the browser to the selected LLM endpoint.
 // ──────────────────────────────────────────────────────────────

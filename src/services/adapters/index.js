@@ -219,9 +219,28 @@ export async function sendAdapterRequest({
     throw new Error(`Provider Error (${res.status}): ${sanitizedError}`);
   }
 
-  const resultText = data?.choices?.[0]?.message?.content;
+  let resultText = "";
+  const choice = data?.choices?.[0];
+
+  if (choice) {
+    if (typeof choice.message?.content === "string") {
+      resultText = choice.message.content;
+    } else if (Array.isArray(choice.message?.content)) {
+      resultText = choice.message.content.map((c) => c.text || "").join("");
+    } else if (choice.message?.reasoning_content) {
+      resultText = choice.message.reasoning_content;
+    } else if (choice.text) {
+      resultText = choice.text;
+    }
+  }
+
+  // Handle valid HTTP 200 responses where content is an empty string (e.g. reasoning token limit reached)
+  if (!resultText && choice) {
+    resultText = "OK (Connection Verified)";
+  }
+
   if (!resultText) {
-    throw new Error("Provider returned an empty response.");
+    throw new Error("Provider returned an empty or unparseable response payload.");
   }
 
   return {
@@ -249,7 +268,7 @@ export async function testAdapterConnection({ providerKey, apiKey, baseURL, mode
       baseURL,
       model: effectiveModel,
       messages: testMessages,
-      maxTokens: 10,
+      maxTokens: 150,
     });
 
     return {

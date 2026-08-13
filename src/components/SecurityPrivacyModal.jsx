@@ -39,7 +39,7 @@ export default function SecurityPrivacyModal({ isOpen, onClose }) {
             <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left text-xs font-mono">
               <div className="p-2.5 rounded bg-zinc-800 border border-zinc-700 w-full sm:w-auto">
                 <span className="block text-emerald-400 font-bold">Your Browser</span>
-                <span className="text-zinc-400 text-[10px]">React Session State</span>
+                <span className="text-zinc-400 text-[10px]">In-Memory Application State</span>
               </div>
               <div className="text-zinc-500 font-bold">➔ Direct Fetch ➔</div>
               <div className="p-2.5 rounded bg-zinc-800 border border-zinc-700 w-full sm:w-auto">
@@ -59,7 +59,7 @@ export default function SecurityPrivacyModal({ isOpen, onClose }) {
               <div className="p-3 rounded-md bg-zinc-900 border border-zinc-800 space-y-1">
                 <div className="font-medium text-emerald-400">🔑 In-Memory Key Storage</div>
                 <div className="text-zinc-400 text-xs">
-                  API keys are stored exclusively in temporary React component state. They are <strong>never saved to localStorage</strong> or disk.
+                  API keys are stored exclusively in temporary <strong>In-Memory Application State</strong>. They are <strong>never saved to localStorage</strong> or disk.
                 </div>
               </div>
               <div className="p-3 rounded-md bg-zinc-900 border border-zinc-800 space-y-1">

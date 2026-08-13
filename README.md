@@ -10,11 +10,13 @@ The application enables users to create, evaluate, benchmark, and manage enginee
 
 This application operates as a **Pure Client-Side BYOK Static Application** with **Zero Server Persistence**:
 
-- **In-Memory Key Handling:** API keys live exclusively in temporary React session state (`apiKey`). Keys are **never written to `localStorage`**, cookies, or disk, and vanish when the browser tab closes.
+- **In-Memory Key Handling:** API keys live exclusively in temporary **In-Memory Application State** (`apiKey`). Keys are **never written to `localStorage`**, cookies, or disk, and vanish when the browser tab closes.
 - **Direct Provider Fetch:** Outbound API requests travel directly from the client browser to your selected AI provider. No intermediate backend proxy or logging server is involved.
+- **No App-Level Telemetry:** The application contains zero user tracking, analytics scripts, or server logging layer.
+- **Local Prompt History Privacy:** Prompt history persists strictly in client browser `localStorage` for convenience and can be cleared manually at any time.
 - **Non-Sensitive Preference Persistence:** Only non-sensitive configurations (`provider`, `model`, `baseURL`) persist in `localStorage`.
 - **Custom Base URL Protocol Guard:** Custom endpoints are validated for protocol safety (`https://` required for remote hosts; `http://` permitted for local Ollama/localhost). Custom URLs require explicit user confirmation.
-- **Static Content Security Policy (CSP):** Netlify deployment headers enforce CSP restrictions, scoping `connect-src` rules to verified provider API domains.
+- **Static Content Security Policy (CSP):** Netlify deployment headers enforce static CSP restrictions, scoping `connect-src` rules to verified provider API domains.
 
 ---
 
@@ -35,6 +37,7 @@ This application operates as a **Pure Client-Side BYOK Static Application** with
 - ⚖️ **Multi-Model Comparison Engine:** Benchmark prompt execution side-by-side across up to 3 selected models simultaneously.
 - 📚 **Prompt Templates Library:** Pre-engineered templates across 8 categories (Software Engineering, System Design, Coding, Debugging, Testing, Business, Research, Resume).
 - 📜 **Local Prompt History & Exports:** History manager with search, favorites, JSON backup/import, and Markdown/TXT exports.
+- 🧪 **Automated Unit Test Suite:** Vitest test suite testing URL validation, metric calculations, and prompt generators (`npm test`).
 - ⌨️ **Keyboard Shortcuts:** `Ctrl+Enter` to generate, `Ctrl+Shift+T` for templates, `Ctrl+Shift+H` for history, `Ctrl+Shift+S` for settings.
 
 ---
@@ -49,7 +52,13 @@ cd prompt-generator
 npm install
 ```
 
-### 2. Start Development Server
+### 2. Run Automated Unit Tests
+
+```bash
+npm test
+```
+
+### 3. Start Development Server
 
 ```bash
 npm run dev
@@ -57,7 +66,7 @@ npm run dev
 
 Open **http://localhost:5173** in your browser.
 
-### 3. Enter API Key in Settings
+### 4. Enter API Key in Settings
 
 Click **⚙️ Settings** in the top navigation bar, select your provider (e.g. Google Gemini, OpenAI, or Groq), enter your API key, and click **💾 Activate Settings**.
 
@@ -95,7 +104,7 @@ Because this project is a static React application, deploying to Netlify takes l
 ```
 prompt-generator/
 ├── public/
-│   └── _headers                      # Netlify CSP & security response headers
+│   └── _headers                      # Netlify static CSP & security headers
 ├── src/
 │   ├── main.jsx                      # React entry point
 │   ├── App.jsx                       # Main application shell & state
@@ -108,7 +117,8 @@ prompt-generator/
 │   │   ├── SettingsModal.jsx         # Provider config & Test Connection
 │   │   ├── SecurityPrivacyModal.jsx  # Architecture & privacy guarantees
 │   │   ├── PromptTemplatesModal.jsx  # Template gallery loader
-│   │   └── PromptHistoryModal.jsx    # History manager & JSON/MD exporter
+│   │   ├── PromptHistoryModal.jsx    # History manager & JSON/MD exporter
+│   │   └── ui/                       # shadcn UI components (button, card, input, textarea)
 │   ├── data/
 │   │   └── promptTemplates.js        # Curated template dataset
 │   ├── hooks/
@@ -119,8 +129,10 @@ prompt-generator/
 │       ├── llmService.js             # Session key & LLM orchestration
 │       ├── evaluatorService.js       # Metric scoring engine
 │       ├── historyService.js         # LocalStorage history & export utils
+│       ├── __tests__/                # Evaluator unit test suite
 │       └── adapters/
-│         └── index.js                # Provider adapters with timeouts
+│           ├── index.js              # Provider adapters with timeouts
+│           └── __tests__/            # Adapters & URL validation unit tests
 ├── netlify.toml                      # Netlify deployment configuration
 ├── package.json                      # Dependencies & build scripts
 └── vite.config.js                    # Vite bundler configuration
