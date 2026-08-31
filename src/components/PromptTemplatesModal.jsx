@@ -1,16 +1,14 @@
-// src/components/PromptTemplatesModal.jsx
 import React, { useState } from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import Modal, { ModalHeader, ModalTitle, ModalContent } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PROMPT_TEMPLATES } from "@/data/promptTemplates";
 import { toast } from "react-hot-toast";
+import { BookOpen, Search, Zap } from "lucide-react";
 
 export default function PromptTemplatesModal({ isOpen, onClose, onSelectTemplate }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
-
-  if (!isOpen) return null;
 
   const categories = ["All", ...new Set(PROMPT_TEMPLATES.map((t) => t.category))];
 
@@ -35,95 +33,73 @@ export default function PromptTemplatesModal({ isOpen, onClose, onSelectTemplate
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
-      <Card className="w-full max-w-3xl shadow-2xl border-zinc-700 bg-zinc-950 text-zinc-100 max-h-[90vh] overflow-y-auto">
-        <CardHeader className="flex flex-row items-center justify-between pb-4 border-b border-zinc-800 sticky top-0 bg-zinc-950/95 backdrop-blur z-10">
-          <div>
-            <CardTitle className="text-xl flex items-center gap-2">
-              📚 Prompt Templates Library
-            </CardTitle>
-            <p className="text-xs text-muted-foreground mt-1">
-              Select a pre-engineered prompt template to auto-fill the form.
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-zinc-400 hover:text-white text-xl font-bold p-1 rounded-md hover:bg-zinc-800"
-            aria-label="Close templates modal"
-          >
-            ✕
-          </button>
-        </CardHeader>
-
-        <CardContent className="pt-4 space-y-4">
-          {/* Search & Category Filter */}
-          <div className="flex flex-col sm:flex-row gap-3">
+    <Modal isOpen={isOpen} onClose={onClose} maxWidth="max-w-3xl">
+      <ModalHeader>
+        <div className="flex items-center gap-2">
+          <BookOpen className="h-5 w-5 text-primary" />
+          <ModalTitle>Prompt Templates</ModalTitle>
+        </div>
+      </ModalHeader>
+      <ModalContent className="space-y-4">
+        {/* Search & Category Filter */}
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               type="text"
-              placeholder="🔍 Search templates by keyword..."
+              placeholder="Search templates..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-zinc-900 border-zinc-700 text-xs flex-1"
+              className="pl-9"
             />
-            <div className="flex gap-1 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
-              {categories.map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setSelectedCategory(cat)}
-                  className={`text-xs px-2.5 py-1.5 rounded-md whitespace-nowrap transition-colors ${
-                    selectedCategory === cat
-                      ? "bg-emerald-600 text-white font-medium"
-                      : "bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white"
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
           </div>
-
-          {/* Templates Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
-            {filteredTemplates.map((template) => (
-              <div
-                key={template.id}
-                className="p-4 rounded-lg bg-zinc-900 border border-zinc-800 hover:border-emerald-500/50 transition-all space-y-2 flex flex-col justify-between"
+          <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-none">
+            {categories.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setSelectedCategory(cat)}
+                className={`text-xs px-2.5 py-1.5 rounded-full whitespace-nowrap transition-colors border ${
+                  selectedCategory === cat
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "text-muted-foreground border-border hover:text-foreground"
+                }`}
               >
-                <div>
-                  <div className="flex items-center justify-between gap-2 mb-1">
-                    <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
-                      {template.category}
-                    </span>
-                  </div>
-                  <h3 className="font-semibold text-sm text-zinc-100">{template.title}</h3>
-                  <p className="text-xs text-zinc-400 leading-relaxed mt-1">
-                    {template.description}
-                  </p>
-                </div>
-
-                <div className="pt-3 border-t border-zinc-800/80 flex items-center justify-between">
-                  <span className="text-[11px] text-zinc-500 truncate max-w-[180px]">
-                    Role: {template.role}
-                  </span>
-                  <Button
-                    size="sm"
-                    onClick={() => handleApply(template)}
-                    className="h-7 text-xs bg-emerald-600 hover:bg-emerald-500 text-white px-3"
-                  >
-                    ⚡ Use Template
-                  </Button>
-                </div>
-              </div>
+                {cat}
+              </button>
             ))}
-
-            {filteredTemplates.length === 0 && (
-              <div className="col-span-full py-12 text-center text-zinc-500 text-xs">
-                No matching prompt templates found. Try resetting your search filter.
-              </div>
-            )}
           </div>
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+
+        {/* Templates Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[50vh] overflow-y-auto pr-1">
+          {filteredTemplates.map((template) => (
+            <div
+              key={template.id}
+              className="p-4 rounded-lg bg-muted hover:bg-accent transition-colors space-y-2"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+                  {template.category}
+                </span>
+              </div>
+              <h3 className="font-semibold text-sm">{template.title}</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">{template.description}</p>
+              <div className="flex items-center justify-between pt-2 border-t border-border">
+                <span className="text-[11px] text-muted-foreground truncate max-w-[180px]">Role: {template.role}</span>
+                <Button size="sm" onClick={() => handleApply(template)} className="h-7 text-xs gap-1">
+                  <Zap className="h-3 w-3" />
+                  Use
+                </Button>
+              </div>
+            </div>
+          ))}
+          {filteredTemplates.length === 0 && (
+            <div className="col-span-full py-8 text-center text-muted-foreground text-sm">
+              No matching templates found.
+            </div>
+          )}
+        </div>
+      </ModalContent>
+    </Modal>
   );
 }
