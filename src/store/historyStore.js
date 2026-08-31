@@ -1,10 +1,12 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { promptApi } from "../services/backend";
 
 export const useHistoryStore = create(
   persist(
     (set, get) => ({
       history: [],
+      isLoading: false,
 
       addToHistory: (item) => {
         const newItem = {
@@ -23,22 +25,52 @@ export const useHistoryStore = create(
         }));
       },
 
-      toggleFavorite: (id) => {
+      toggleFavorite: async (id) => {
         set((state) => ({
           history: state.history.map((item) =>
             item.id === id ? { ...item, favorite: !item.favorite } : item
           ),
         }));
+        try {
+          await promptApi.toggleFavorite(id);
+        } catch {
+          // Offline or error - local state already updated
+        }
       },
 
-      deleteFromHistory: (id) => {
+      deleteFromHistory: async (id) => {
         set((state) => ({
           history: state.history.filter((item) => item.id !== id),
         }));
+        try {
+          await promptApi.deleteHistory(id);
+        } catch {
+          // Offline or error
+        }
       },
 
       clearHistory: () => {
         set({ history: [] });
+      },
+
+      syncFromBackend: async () => {
+        set({ isLoading: true });
+        try {
+          const { data } = await promptApi.history(0, 50);
+          const items = data.data.content.map((item) => ({
+            id: item.id,
+            timestamp: item.createdAt,
+            inputs: JSON.parse(item.inputsJson || "{}"),
+            generatedPrompt: item.generatedPrompt,
+            model: item.model,
+            provider: item.provider,
+            favorite: item.isFavorite,
+            tags: [],
+          }));
+          set({ history: items, isLoading: false });
+        } catch {
+          set({ isLoading: false });
+        }
       },
 
       importHistory: (jsonString) => {
