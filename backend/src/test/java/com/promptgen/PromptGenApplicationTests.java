@@ -1,10 +1,10 @@
-package com.example.backend;
+package com.promptgen;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class BackendApplicationTests {
+class PromptGenApplicationTests {
 
     @Test
     void contextLoads() {

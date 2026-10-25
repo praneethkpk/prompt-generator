@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { useLocation } from "react-router-dom";
 import { Zap, AlertTriangle } from "lucide-react";
 import PromptForm from "@/components/PromptForm";
 import PromptOutput from "@/components/PromptOutput";
@@ -11,6 +12,7 @@ import PromptEvaluator from "@/components/PromptEvaluator";
 import { buildMetaPrompt } from "@/prompts/metaPromptTemplate";
 import { generatePrompt, testPrompt } from "@/services/llmService";
 import { savePromptToHistory } from "@/services/historyService";
+import { useHistoryStore } from "@/store/historyStore";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useSettingsStore } from "@/store/settingsStore";
 import { toast } from "react-hot-toast";
@@ -20,6 +22,7 @@ import ReactMarkdown from "react-markdown";
 import { Copy, FileText, Download, Scale, FlaskConical, Target, Sparkles } from "lucide-react";
 
 export default function GeneratorPage() {
+  const location = useLocation();
   const apiKey = useSettingsStore((s) => s.apiKey);
   const activeSettings = {
     model: useSettingsStore((s) => s.model),
@@ -41,6 +44,16 @@ export default function GeneratorPage() {
   const [isTesting, setIsTesting] = useState(false);
   const [testError, setTestError] = useState("");
 
+  useEffect(() => {
+    if (location.state?.template) {
+      setInitialFormValues(location.state.template);
+      toast.success(`Loaded template: ${location.state.template.title || "Custom"}`);
+    } else if (location.state?.inputs) {
+      setInitialFormValues(location.state.inputs);
+      toast.success("Loaded prompt inputs from history!");
+    }
+  }, [location.state]);
+
   const handleGenerate = async (inputs) => {
     setIsGenerating(true);
     setApiError("");
@@ -52,12 +65,15 @@ export default function GeneratorPage() {
       const result = await generatePrompt(metaPrompt, { apiKey });
       setGeneratedPrompt(result);
 
-      savePromptToHistory({
+      const historyEntry = {
         inputs,
         generatedPrompt: result,
         model: activeSettings?.model || "gemini-3.6-flash",
         provider: activeSettings?.provider || "gemini",
-      });
+      };
+
+      savePromptToHistory(historyEntry);
+      useHistoryStore.getState().addToHistory(historyEntry);
 
       toast.success("Prompt engineered successfully!");
     } catch (err) {
@@ -218,7 +234,7 @@ export default function GeneratorPage() {
               </div>
             </div>
             <div className="px-6 py-4">
-              <div className="prose prose-sm max-w-none rounded-lg bg-muted p-4 overflow-auto max-h-[500px">
+              <div className="prose prose-sm max-w-none rounded-lg bg-muted p-4 overflow-auto max-h-[500px]">
                 <ReactMarkdown>{generatedPrompt}</ReactMarkdown>
               </div>
             </div>

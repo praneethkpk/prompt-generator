@@ -11,11 +11,11 @@
         <relativePath/>
     </parent>
 
-    <groupId>com.example</groupId>
-    <artifactId>backend</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
-    <name>backend</name>
-    <description>Simple Spring Boot Backend</description>
+    <groupId>com.promptgen</groupId>
+    <artifactId>promptgen-backend</artifactId>
+    <version>2.0.0</version>
+    <name>promptgen-backend</name>
+    <description>PromptGen BYOK Production Backend with AES-256 Vault and JWT Auth</description>
 
     <properties>
         <java.version>21</java.version>

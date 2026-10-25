@@ -13,6 +13,7 @@ import {
   sendAdapterRequest,
   testAdapterConnection,
 } from "./adapters";
+import { useSettingsStore } from "@/store/settingsStore";
 
 // In-memory key holder for current browser session
 let inMemoryApiKey = "";
@@ -76,11 +77,12 @@ export function saveSettings(settings) {
  * Call LLM using active session configuration.
  */
 export async function sendLLMRequest(prompt, systemMessage = null, customConfig = null) {
+  const settingsState = useSettingsStore.getState();
   const stored = getStoredSettings() || {};
-  const provider = customConfig?.provider || stored.provider || "gemini";
-  const model = customConfig?.model || stored.model || PROVIDER_PRESETS[provider]?.models[0] || "gemini-3.6-flash";
-  const baseURL = customConfig?.baseURL || stored.baseURL || PROVIDER_PRESETS[provider]?.baseURL || "";
-  const apiKey = customConfig?.apiKey ?? getSessionApiKey();
+  const provider = customConfig?.provider || settingsState?.provider || stored.provider || "gemini";
+  const model = customConfig?.model || settingsState?.model || stored.model || PROVIDER_PRESETS[provider]?.models[0] || "gemini-3.6-flash";
+  const baseURL = customConfig?.baseURL || settingsState?.baseURL || stored.baseURL || PROVIDER_PRESETS[provider]?.baseURL || "";
+  const apiKey = customConfig?.apiKey ?? (settingsState?.apiKey || getSessionApiKey());
 
   if (!apiKey && provider !== "ollama") {
     throw new Error(

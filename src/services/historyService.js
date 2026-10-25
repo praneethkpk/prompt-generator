@@ -2,10 +2,13 @@
 /**
  * Local Storage Prompt History & Version Service
  */
+import { useHistoryStore } from "@/store/historyStore";
 
 const STORAGE_KEY = "prompt_gen_history_v1";
 
 export function getPromptHistory() {
+  const storeHistory = useHistoryStore.getState().history;
+  if (storeHistory && storeHistory.length > 0) return storeHistory;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     return raw ? JSON.parse(raw) : [];
@@ -15,7 +18,6 @@ export function getPromptHistory() {
 }
 
 export function savePromptToHistory(promptItem) {
-  const history = getPromptHistory();
   const newItem = {
     id: promptItem.id || `prompt_${Date.now()}`,
     timestamp: new Date().toISOString(),
@@ -27,33 +29,31 @@ export function savePromptToHistory(promptItem) {
     tags: promptItem.tags || [promptItem.inputs?.role?.split(" ")?.[0] || "Prompt"],
   };
 
-  // Keep latest 50 prompts
-  const updated = [newItem, ...history.filter((h) => h.id !== newItem.id)].slice(0, 50);
+  useHistoryStore.getState().addToHistory(newItem);
+
+  // Also maintain backward-compatible local cache
   try {
+    const history = getPromptHistory();
+    const updated = [newItem, ...history.filter((h) => h.id !== newItem.id)].slice(0, 50);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-  } catch (err) {
-    console.error("Failed to save history", err);
+    return updated;
+  } catch {
+    return useHistoryStore.getState().history;
   }
-  return updated;
 }
 
 export function toggleFavoritePrompt(id) {
-  const history = getPromptHistory();
-  const updated = history.map((item) =>
-    item.id === id ? { ...item, favorite: !item.favorite } : item
-  );
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-  return updated;
+  useHistoryStore.getState().toggleFavorite(id);
+  return useHistoryStore.getState().history;
 }
 
 export function deletePromptFromHistory(id) {
-  const history = getPromptHistory();
-  const updated = history.filter((item) => item.id !== id);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-  return updated;
+  useHistoryStore.getState().deleteFromHistory(id);
+  return useHistoryStore.getState().history;
 }
 
 export function clearPromptHistory() {
+  useHistoryStore.getState().clearHistory();
   localStorage.removeItem(STORAGE_KEY);
   return [];
 }

@@ -1,10 +1,11 @@
 import React from "react";
 import { Toaster } from "react-hot-toast";
 import AppRouter from "./router";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 export default function App() {
   return (
-    <>
+    <ErrorBoundary>
       <Toaster
         position="top-right"
         toastOptions={{
@@ -15,6 +16,6 @@ export default function App() {
         }}
       />
       <AppRouter />
-    </>
+    </ErrorBoundary>
   );
 }

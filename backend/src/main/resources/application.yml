@@ -1,28 +1,30 @@
 spring:
   application:
-    name: backend
+    name: promptgen-backend
 
   # H2 Database Configuration (for development)
   datasource:
-    url: jdbc:h2:mem:backend_db
+    url: jdbc:h2:file:./data/promptgen_dev;AUTO_SERVER=TRUE
     username: sa
-    password: 
+    password:
     driver-class-name: org.h2.Driver
 
-  # H2 Console
+  # H2 Console (dev only — disabled in prod profile)
   h2:
     console:
       enabled: true
       path: /h2-console
+      settings:
+        web-allow-others: false
 
   # JPA/Hibernate Configuration
   jpa:
     hibernate:
-      ddl-auto: create-drop
-    show-sql: true
+      ddl-auto: update
+    show-sql: false
     properties:
       hibernate:
-        format_sql: true
+        format_sql: false
     defer-datasource-initialization: true
 
   # SQL initialization
@@ -37,8 +39,15 @@ spring:
 # Application Configuration
 app:
   jwt:
-    secret: ${JWT_SECRET:mySecretKey123456789012345678901234567890}
-    expiration: 86400000  # 24 hours in milliseconds
+    secret: ${JWT_SECRET:DevOnlySecretKeyThatMustBeReplacedInProduction2026!}
+    access-token-expiration-ms: ${JWT_ACCESS_EXPIRY:900000}       # 15 minutes
+    refresh-token-expiration-ms: ${JWT_REFRESH_EXPIRY:604800000}  # 7 days
+
+  encryption:
+    master-key: ${ENCRYPTION_MASTER_KEY:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=}  # 32-byte base64 dev placeholder
+
+  cors:
+    allowed-origins: ${CORS_ORIGINS:http://localhost:5173,http://localhost:3000}
 
 # Swagger/OpenAPI Configuration
 springdoc:
@@ -50,4 +59,4 @@ springdoc:
 
 # Server Configuration
 server:
-  port: 8080
+  port: ${PORT:8080}

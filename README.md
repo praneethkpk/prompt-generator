@@ -58,7 +58,7 @@ npm install
 npm test
 ```
 
-### 3. Start Development Server
+### 3. Start Frontend Development Server
 
 ```bash
 npm run dev
@@ -66,7 +66,21 @@ npm run dev
 
 Open **http://localhost:5173** in your browser.
 
-### 4. Enter API Key in Settings
+### 4. Optional: Start Spring Boot Backend (For Secure Encrypted Key Vault & Cloud Sync)
+
+PromptGen can run as a **100% client-side app** with zero backend.
+If you also want centralized JWT user authentication, persistent cloud history, and an **AES-256-GCM encrypted key vault**, start the backend:
+
+```bash
+npm run backend
+# Or: cd backend && mvn spring-boot:run
+```
+
+- Backend API: **http://localhost:8080/api/v1**
+- Swagger UI / OpenAPI docs: **http://localhost:8080/swagger-ui.html**
+- H2 Dev Console: **http://localhost:8080/h2-console**
+
+### 5. Enter API Key in Settings
 
 Click **⚙️ Settings** in the top navigation bar, select your provider (e.g. Google Gemini, OpenAI, or Groq), enter your API key, and click **💾 Activate Settings**.
 
@@ -86,16 +100,10 @@ Click **⚙️ Settings** in the top navigation bar, select your provider (e.g. 
 
 ---
 
-## 🌐 Netlify Production Deployment
+## 🌐 Production Deployment
 
-Because this project is a static React application, deploying to Netlify takes less than a minute:
-
-1. Push your repository to GitHub.
-2. Connect your repository in [Netlify Console](https://app.netlify.com).
-3. Build Settings:
-   - **Build Command:** `npm run build`
-   - **Publish Directory:** `dist`
-4. Netlify will automatically detect `netlify.toml` and apply security headers (`_headers`).
+- **Frontend (Netlify / Vercel):** Pure static build via `npm run build` targeting `dist/`.
+- **Backend (Docker / Cloud / VPS):** Containerized Spring Boot 3.2 app via `backend/Dockerfile` and `docker-compose.yml` with PostgreSQL and AES-256 key encryption.
 
 ---
 
@@ -103,37 +111,26 @@ Because this project is a static React application, deploying to Netlify takes l
 
 ```
 prompt-generator/
-├── public/
-│   └── _headers                      # Netlify static CSP & security headers
+├── backend/                          # Spring Boot 3.2 Java 21 Backend
+│   ├── pom.xml                       # Maven build descriptor (Java 21)
+│   ├── Dockerfile & docker-compose   # Containerization for PostgreSQL + Spring Boot
+│   └── src/main/java/com/promptgen/
+│       ├── config/                   # SecurityConfig, CorsConfig, JwtConfig, OpenApiConfig
+│       ├── controller/               # Auth, ApiKey, Prompt, Health REST endpoints
+│       ├── security/                 # JwtTokenProvider, JwtAuthenticationFilter
+│       ├── service/                  # EncryptionService (AES-256-GCM), AuthService, PromptService
+│       └── model/                    # User, ApiKey (encrypted), PromptHistory entities
+├── public/                           # Static assets and Netlify headers
 ├── src/
 │   ├── main.jsx                      # React entry point
-│   ├── App.jsx                       # Main application shell & state
-│   ├── index.css                     # Tailwind CSS & theme variables
-│   ├── components/
-│   │   ├── PromptForm.jsx            # Inputs with live character counters
-│   │   ├── PromptOutput.jsx          # Markdown renderer & export triggers
-│   │   ├── PromptEvaluator.jsx       # 5-Metric quality scorecard
-│   │   ├── ModelComparisonModal.jsx  # Side-by-side benchmark runner
-│   │   ├── SettingsModal.jsx         # Provider config & Test Connection
-│   │   ├── SecurityPrivacyModal.jsx  # Architecture & privacy guarantees
-│   │   ├── PromptTemplatesModal.jsx  # Template gallery loader
-│   │   ├── PromptHistoryModal.jsx    # History manager & JSON/MD exporter
-│   │   └── ui/                       # shadcn UI components (button, card, input, textarea)
-│   ├── data/
-│   │   └── promptTemplates.js        # Curated template dataset
-│   ├── hooks/
-│   │   └── useKeyboardShortcuts.js   # Global hotkey listener
-│   ├── prompts/
-│   │   └── metaPromptTemplate.js     # Structural meta-prompt builder
-│   └── services/
-│       ├── llmService.js             # Session key & LLM orchestration
-│       ├── evaluatorService.js       # Metric scoring engine
-│       ├── historyService.js         # LocalStorage history & export utils
-│       ├── __tests__/                # Evaluator unit test suite
-│       └── adapters/
-│           ├── index.js              # Provider adapters with timeouts
-│           └── __tests__/            # Adapters & URL validation unit tests
-├── netlify.toml                      # Netlify deployment configuration
-├── package.json                      # Dependencies & build scripts
-└── vite.config.js                    # Vite bundler configuration
+│   ├── App.jsx                       # Main shell wrapped in ErrorBoundary + Toaster
+│   ├── router.jsx                    # React Router routes (Generator, Dashboard, Library, etc.)
+│   ├── store/                        # Zustand stores (auth, settings, history, theme)
+│   ├── pages/                        # Generator, Dashboard, Library, ApiKeys, Login, Register
+│   ├── components/                   # PromptForm, PromptOutput, Modals, ErrorBoundary, ui/
+│   ├── prompts/                      # metaPromptTemplate.js (XML CoT prompt builder)
+│   └── services/                     # llmService, adapters, historyService, backend API client
+├── package.json                      # Frontend scripts + npm run backend
+└── vite.config.js                    # Vite bundler with proxy to port 8080
 ```
+

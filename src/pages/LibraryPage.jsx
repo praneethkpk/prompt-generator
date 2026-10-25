@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { BookOpen, History, Star, Search, Trash2, Copy, Download, RefreshCw } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { BookOpen, History, Star, Search, Trash2, Copy, Download, RefreshCw, Zap, ArrowUpRight } from "lucide-react";
 import { PROMPT_TEMPLATES } from "@/data/promptTemplates";
 import { useHistoryStore } from "@/store/historyStore";
 import { toast } from "react-hot-toast";
@@ -15,6 +16,7 @@ const tabs = [
 ];
 
 export default function LibraryPage() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("templates");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
@@ -137,7 +139,11 @@ export default function LibraryPage() {
                   <span className="text-[11px] text-muted-foreground truncate max-w-[200px]">
                     Role: {template.role}
                   </span>
-                  <Button size="sm" className="h-7 text-xs gap-1.5 opacity-80 group-hover:opacity-100 transition-opacity">
+                  <Button
+                    size="sm"
+                    onClick={() => navigate("/", { state: { template } })}
+                    className="h-7 text-xs gap-1.5 opacity-80 group-hover:opacity-100 transition-opacity"
+                  >
                     <Zap className="h-3.5 w-3.5" />
                     Use
                   </Button>
@@ -214,15 +220,22 @@ export default function LibraryPage() {
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span>{new Date(item.timestamp).toLocaleString()}</span>
                   <div className="flex items-center gap-1.5">
+                    <button
+                      title="Load in Generator"
+                      onClick={() => navigate("/", { state: { inputs: item.inputs } })}
+                      className="p-1.5 rounded-md hover:bg-primary/10 text-primary transition-colors"
+                    >
+                      <Zap className="h-3.5 w-3.5" />
+                    </button>
                     <CopyToClipboard text={item.generatedPrompt} onCopy={() => toast.success("Copied!")}>
-                      <button className="p-1.5 rounded-md hover:bg-muted transition-colors">
+                      <button title="Copy Prompt" className="p-1.5 rounded-md hover:bg-muted transition-colors">
                         <Copy className="h-3.5 w-3.5" />
                       </button>
                     </CopyToClipboard>
-                    <button onClick={() => handleExportMarkdown(item)} className="p-1.5 rounded-md hover:bg-muted transition-colors">
+                    <button title="Export Markdown" onClick={() => handleExportMarkdown(item)} className="p-1.5 rounded-md hover:bg-muted transition-colors">
                       <Download className="h-3.5 w-3.5" />
                     </button>
-                    <button onClick={() => { deleteFromHistory(item.id); toast.success("Deleted"); }} className="p-1.5 rounded-md hover:bg-destructive/10 text-destructive transition-colors">
+                    <button title="Delete" onClick={() => { deleteFromHistory(item.id); toast.success("Deleted"); }} className="p-1.5 rounded-md hover:bg-destructive/10 text-destructive transition-colors">
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
                   </div>

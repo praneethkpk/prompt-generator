@@ -1,12 +1,12 @@
 spring:
   application:
-    name: backend
+    name: promptgen-backend
 
   # PostgreSQL Configuration (for production)
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:backend_db}
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:promptgen_db}
     username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:password}
+    password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 10
@@ -14,10 +14,15 @@ spring:
       idle-timeout: 30000
       connection-timeout: 20000
 
+  # Disable H2 console in production
+  h2:
+    console:
+      enabled: false
+
   # JPA/Hibernate Configuration
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     show-sql: false
     properties:
       hibernate:
@@ -31,17 +36,23 @@ spring:
 # Application Configuration
 app:
   jwt:
-    secret: ${JWT_SECRET:changeThisToASecretKeyAtLeast32CharactersLong}
-    expiration: 86400000  # 24 hours in milliseconds
+    secret: ${JWT_SECRET}
+    access-token-expiration-ms: ${JWT_ACCESS_EXPIRY:900000}
+    refresh-token-expiration-ms: ${JWT_REFRESH_EXPIRY:604800000}
 
-# Swagger/OpenAPI Configuration
+  encryption:
+    master-key: ${ENCRYPTION_MASTER_KEY}
+
+  cors:
+    allowed-origins: ${CORS_ORIGINS}
+
+# Swagger/OpenAPI — disabled in production
 springdoc:
   api-docs:
-    path: /api-docs
+    enabled: false
   swagger-ui:
-    path: /swagger-ui.html
-    operationsSorter: method
+    enabled: false
 
 # Server Configuration
 server:
-  port: 8080
+  port: ${PORT:8080}
