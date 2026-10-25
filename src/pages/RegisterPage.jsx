@@ -22,7 +22,11 @@ export default function RegisterPage() {
       toast.success("Account created! Welcome aboard.");
       navigate("/");
     } catch (err) {
-      toast.error(err.response?.data?.message || "Registration failed");
+      const msg = err.response?.data?.message 
+        || (err.message === "Network Error" || !err.response 
+            ? "Cannot connect to backend server. Make sure the backend is running (`npm run backend`)." 
+            : err.message || "Registration failed");
+      toast.error(msg, { duration: 5000 });
     } finally {
       setLoading(false);
     }
